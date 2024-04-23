@@ -38,7 +38,7 @@ func TestG(t *testing.T) {
     }
 }
 
-func TestECBe(t *testing.T) {
+func TestFe(t *testing.T) {
     var tests = []struct{
         block block
         key key
@@ -51,13 +51,13 @@ func TestECBe(t *testing.T) {
         },
     }
     for _, test := range tests {
-        if got := ECBe(test.block, test.key); got != test.result {
+        if got := Fe(test.block, test.key); got != test.result {
             t.Errorf("ECBe(%x, %x) is %x, not %x", test.block, test.key, test.result, got)
         }
     }
 }
 
-func TestECBd(t *testing.T) {
+func TestFd(t *testing.T) {
     var tests = []struct{
         block block
         key key
@@ -70,7 +70,7 @@ func TestECBd(t *testing.T) {
         },
     }
     for _, test := range tests {
-        if got := ECBd(test.block, test.key); got != test.result {
+        if got := Fd(test.block, test.key); got != test.result {
             t.Errorf("ECBd(%x, %x) is %x, not %x", test.block, test.key, test.result, got)
         }
     }

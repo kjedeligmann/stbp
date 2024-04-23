@@ -24,13 +24,12 @@ func H(u uint8) uint8 {
     return Hbox[u >> 4][u & 0xF]
 }
 
-type u [4]uint8
 type block [4]uint32
 type key [8]uint32
 
 // The G transform
 func G(r uint32, a uint32) (result uint32) {
-    var u u
+    var u [4]uint8
     // Reading octets from uint32
     for i := 0; i < 4; i++ {
         u[i] = uint8(a >> ((3-i)*8))
@@ -100,8 +99,8 @@ func Minus(u uint32, v uint32) (r uint32) {
     return
 }
 
-// ECB mode encryption function (F_theta(x))
-func ECBe(x block, k key) block {
+// Encryption function (F_theta(x))
+func Fe(x block, k key) block {
     var a, b, c, d, e uint32
     a, b, c, d = x[0], x[1], x[2], x[3]
     for i := 1; i <= 8; i++ {
@@ -123,8 +122,8 @@ func ECBe(x block, k key) block {
     return y
 }
 
-// ECB mode decryption function (F_theta^{-1}(x))
-func ECBd(x block, k key) block {
+// Decryption function (F_theta^{-1}(x))
+func Fd(x block, k key) block {
     var a, b, c, d, e uint32
     a, b, c, d = x[0], x[1], x[2], x[3]
     for i := 8; i >= 1; i-- {
