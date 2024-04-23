@@ -19,6 +19,31 @@ var Hbox = [16][16]uint8{
     {0xD4, 0xEF, 0xD9, 0xB4, 0x3A, 0x62, 0x28, 0x75, 0x91, 0x14, 0x10, 0xEA, 0x77, 0x6C, 0xDA, 0x1D},
 }
 
+// The H substitution
 func H(u uint8) uint8 {
     return Hbox[u >> 4][u & 0xF]
+}
+
+type u [4]uint8
+type block [4]u
+
+// The G transform
+func G(r uint32, u u) u {
+    // Using the H substitution on octets
+    for i := 0; i < 4; i++ {
+        u[i] = H(u[i])
+    }
+    // Putting the result into uint32 in little-endian order
+    var leu uint32
+    for i := 0; i < 4; i++ {
+        leu |= uint32(u[i]) << (i*8)
+    }
+    // Cyclic bit shift
+    leu = leu << r | leu >> (32-r)
+    // Putting the octets back in the original order
+    for i := 0; i < 4; i++ {
+        u[i] = uint8(leu)
+        leu >>= 8
+    }
+    return u
 }

@@ -18,3 +18,22 @@ func TestH(t *testing.T) {
         }
     }
 }
+
+func TestG(t *testing.T) {
+    var tests = []struct{
+        u u
+        r uint32
+        result u
+    }{
+        {
+            u{0xb1, 0x94, 0xba, 0xc8},
+            5,
+            u{0x14, 0xa4, 0x3d, 0x1f},
+        },
+    }
+    for _, test := range tests {
+        if got := G(test.r, test.u); got != test.result {
+            t.Errorf("G(%d, %x) is %x, not %x", test.r, test.u, test.result, got)
+        }
+    }
+}
