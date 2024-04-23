@@ -25,11 +25,17 @@ func H(u uint8) uint8 {
 }
 
 type u [4]uint8
-type block [4]u
+type block [4]uint32
+type key [8]uint32
 
 // The G transform
-func G(r uint32, u u) u {
-    // Using the H substitution on octets
+func G(r uint32, a uint32) (result uint32) {
+    var u u
+    // Reading octets from uint32
+    for i := 0; i < 4; i++ {
+        u[i] = uint8(a >> ((3-i)*8))
+    }
+    // Using the H substitution on them
     for i := 0; i < 4; i++ {
         u[i] = H(u[i])
     }
@@ -40,10 +46,102 @@ func G(r uint32, u u) u {
     }
     // Cyclic bit shift
     leu = leu << r | leu >> (32-r)
-    // Putting the octets back in the original order
+    // Putting the octets back in the big-endian order
     for i := 0; i < 4; i++ {
-        u[i] = uint8(leu)
+        result |= uint32(uint8(leu)) << ((3-i)*8)
         leu >>= 8
     }
-    return u
+    return
+}
+
+// Little-endian plus from the standard
+func Plus(u uint32, v uint32) (r uint32) {
+    var c uint32
+    for i := 0; i < 4; i++ {
+        c |= uint32(uint8(u)) << ((3-i)*8)
+        u >>= 8
+    }
+    r = c
+    c = 0
+    for i := 0; i < 4; i++ {
+        c |= uint32(uint8(v)) << ((3-i)*8)
+        v >>= 8
+    }
+    r += c
+    c = 0
+    for i := 0; i < 4; i++ {
+        c |= uint32(uint8(r)) << ((3-i)*8)
+        r >>= 8
+    }
+    r = c
+    return
+}
+
+// Little-endian minus from the standard
+func Minus(u uint32, v uint32) (r uint32) {
+    var c uint32
+    for i := 0; i < 4; i++ {
+        c |= uint32(uint8(u)) << ((3-i)*8)
+        u >>= 8
+    }
+    r = c
+    c = 0
+    for i := 0; i < 4; i++ {
+        c |= uint32(uint8(v)) << ((3-i)*8)
+        v >>= 8
+    }
+    r -= c
+    c = 0
+    for i := 0; i < 4; i++ {
+        c |= uint32(uint8(r)) << ((3-i)*8)
+        r >>= 8
+    }
+    r = c
+    return
+}
+
+// ECB mode encryption function (F_theta(x))
+func ECBe(x block, k key) block {
+    var a, b, c, d, e uint32
+    a, b, c, d = x[0], x[1], x[2], x[3]
+    for i := 1; i <= 8; i++ {
+        b ^= G(5, Plus(a, k[((7*i-6)-1)%8]))
+        c ^= G(21, Plus(d, k[((7*i-5)-1)%8]))
+        a = Minus(a, G(13, Plus(b, k[((7*i-4)-1)%8])))
+        // i << 24 because of little-endianness in the standard
+        e = G(21, Plus(Plus(b, c), k[((7*i-3)-1)%8])) ^ uint32(i << 24)
+        b = Plus(b, e)
+        c = Minus(c, e)
+        d = Plus(d, G(13, Plus(c, k[((7*i-2)-1)%8])))
+        b ^= G(21, Plus(a, k[((7*i-1)-1)%8]))
+        c ^= G(5, Plus(d, k[((7*i)-1)%8]))
+        a, b = b, a
+        c, d = d, c
+        b, c = c, b
+    }
+    y := block{b, d, a, c}
+    return y
+}
+
+// ECB mode decryption function (F_theta^{-1}(x))
+func ECBd(x block, k key) block {
+    var a, b, c, d, e uint32
+    a, b, c, d = x[0], x[1], x[2], x[3]
+    for i := 8; i >= 1; i-- {
+        b ^= G(5, Plus(a, k[((7*i)-1)%8]))
+        c ^= G(21, Plus(d, k[((7*i-1)-1)%8]))
+        a = Minus(a, G(13, Plus(b, k[((7*i-2)-1)%8])))
+        // i << 24 because of little-endianness in the standard
+        e = G(21, Plus(Plus(b, c), k[((7*i-3)-1)%8])) ^ uint32(i << 24)
+        b = Plus(b, e)
+        c = Minus(c, e)
+        d = Plus(d, G(13, Plus(c, k[((7*i-4)-1)%8])))
+        b ^= G(21, Plus(a, k[((7*i-5)-1)%8]))
+        c ^= G(5, Plus(d, k[((7*i-6)-1)%8]))
+        a, b = b, a
+        c, d = d, c
+        a, d = d, a
+    }
+    y := block{c, a, d, b}
+    return y
 }
