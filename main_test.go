@@ -177,3 +177,91 @@ func TestECBd(t *testing.T) {
         }
     }
 }
+
+func TestCBCe(t *testing.T) {
+    var tests = []struct{
+        blocks []block
+        key key
+        iv block
+        result []block
+    }{
+        {
+            []block{
+                {0xB194BAC8, 0x0A08F53B, 0x366D008E, 0x584A5DE4},
+                {0x8504FA9D, 0x1BB6C7AC, 0x252E72C2, 0x02FDCE0D},
+                {0x5BE3D612, 0x17B96181, 0xFE6786AD, 0x716B890B},
+            },
+            key{0xE9DEE72C, 0x8F0C0FA6, 0x2DDB49F4, 0x6F739647, 0x06075316, 0xED247A37, 0x39CBA383, 0x03A98BF6},
+            block{0xBE329713, 0x43FC9A48, 0xA02A885F, 0x194B09A1},
+            []block{
+                {0x10116EFA, 0xE6AD58EE, 0x14852E11, 0xDA1B8A74},
+                {0x5CF2480E, 0x8D03F1C1, 0x9492E53E, 0xD3A70F60},
+                {0x657C1EE8, 0xC0E0AE5B, 0x58388BF8, 0xA68E3309},
+            },
+        },
+        {
+            []block{
+                {0x730894D6, 0x158E17CC, 0x1600185A, 0x8F411CAB},
+                {0x0471FF85, 0xC8379239, 0x8D8924EB, 0xD57D03DB},
+                {0x95B97A9B, 0x7907E4B0, 0x20960455, 0xE46176F8},
+            },
+            key{0x92BD9B1C, 0xE5D14101, 0x5445FBC9, 0x5E4D0EF2, 0x682080AA, 0x227D642F, 0x2687F934, 0x90405511},
+            block{0x7ECDA4D0, 0x1544AF8C, 0xA58450BF, 0x66D2E88A},
+            []block{
+                {0xE12BDC1A, 0xE28257EC, 0x703FCCF0, 0x95EE8DF1},
+                {0xC1AB7638, 0x9FE678CA, 0xF7C6F860, 0xD5BB9C4F},
+                {0xF33C657B, 0x637C306A, 0xDD4EA779, 0x9EB23D31},
+            },
+        },
+    }
+    for _, test := range tests {
+        // In 2007 edition of the standard Y0, X0 are equal to F_theta(S), but in 2011 it is changed to plain S. Testcases are from the 2011 edition
+        if got := CBCe(test.blocks, test.key, Fd(test.iv, test.key)); !equal(got, test.result) {
+            t.Errorf("CBCe(%x, %x, %x) is %x, not %x", test.blocks, test.key, test.iv, test.result, got)
+        }
+    }
+}
+
+func TestCBCd(t *testing.T) {
+    var tests = []struct{
+        blocks []block
+        key key
+        iv block
+        result []block
+    }{
+        {
+            []block{
+                {0x10116EFA, 0xE6AD58EE, 0x14852E11, 0xDA1B8A74},
+                {0x5CF2480E, 0x8D03F1C1, 0x9492E53E, 0xD3A70F60},
+                {0x657C1EE8, 0xC0E0AE5B, 0x58388BF8, 0xA68E3309},
+            },
+            key{0xE9DEE72C, 0x8F0C0FA6, 0x2DDB49F4, 0x6F739647, 0x06075316, 0xED247A37, 0x39CBA383, 0x03A98BF6},
+            block{0xBE329713, 0x43FC9A48, 0xA02A885F, 0x194B09A1},
+            []block{
+                {0xB194BAC8, 0x0A08F53B, 0x366D008E, 0x584A5DE4},
+                {0x8504FA9D, 0x1BB6C7AC, 0x252E72C2, 0x02FDCE0D},
+                {0x5BE3D612, 0x17B96181, 0xFE6786AD, 0x716B890B},
+            },
+        },
+        {
+            []block{
+                {0xE12BDC1A, 0xE28257EC, 0x703FCCF0, 0x95EE8DF1},
+                {0xC1AB7638, 0x9FE678CA, 0xF7C6F860, 0xD5BB9C4F},
+                {0xF33C657B, 0x637C306A, 0xDD4EA779, 0x9EB23D31},
+            },
+            key{0x92BD9B1C, 0xE5D14101, 0x5445FBC9, 0x5E4D0EF2, 0x682080AA, 0x227D642F, 0x2687F934, 0x90405511},
+            block{0x7ECDA4D0, 0x1544AF8C, 0xA58450BF, 0x66D2E88A},
+            []block{
+                {0x730894D6, 0x158E17CC, 0x1600185A, 0x8F411CAB},
+                {0x0471FF85, 0xC8379239, 0x8D8924EB, 0xD57D03DB},
+                {0x95B97A9B, 0x7907E4B0, 0x20960455, 0xE46176F8},
+            },
+        },
+    }
+    for _, test := range tests {
+        // Fd() is used because of the later change in the standard
+        if got := CBCd(test.blocks, test.key, Fd(test.iv, test.key)); !equal(got, test.result) {
+            t.Errorf("CBCd(%x, %x, %x) is %x, not %x", test.blocks, test.key, test.iv, test.result, got)
+        }
+    }
+}

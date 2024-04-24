@@ -161,3 +161,29 @@ func ECBd(x []block, k key) (y []block) {
     }
     return
 }
+
+func xb(x, y block) (z block) {
+    for i := 0; i < 4; i++ {
+        z[i] = x[i] ^ y[i]
+    }
+    return
+}
+
+// CBC mode
+func CBCe(x []block, k key, s block) (y []block) {
+    y0 := Fe(s, k)
+    y = append(y, Fe(xb(x[0], y0), k))
+    for i := 1; i < len(x); i++ {
+        y = append(y, Fe(xb(x[i], y[i-1]), k))
+    }
+    return
+}
+
+func CBCd(x []block, k key, s block) (y []block) {
+    x0 := Fe(s, k)
+    y = append(y, xb(Fd(x[0], k), x0))
+    for i := 1; i < len(x); i++ {
+        y = append(y, xb(Fd(x[i], k), x[i-1]))
+    }
+    return
+}
