@@ -144,3 +144,20 @@ func Fd(x block, k key) block {
     y := block{c, a, d, b}
     return y
 }
+
+// ECB and CBC modes will work with slices of blocks for now (but this is not optimal)
+
+// ECB mode
+func ECBe(x []block, k key) (y []block) {
+    for i := 0; i < len(x); i++ {
+        y = append(y, Fe(x[i], k))
+    }
+    return
+}
+
+func ECBd(x []block, k key) (y []block) {
+    for i := 0; i < len(x); i++ {
+        y = append(y, Fd(x[i], k))
+    }
+    return
+}
