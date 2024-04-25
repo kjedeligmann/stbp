@@ -162,6 +162,7 @@ func ECBd(x []block, k key) (y []block) {
     return
 }
 
+// CBC mode
 func xb(x, y block) (z block) {
     for i := 0; i < 4; i++ {
         z[i] = x[i] ^ y[i]
@@ -169,7 +170,6 @@ func xb(x, y block) (z block) {
     return
 }
 
-// CBC mode
 func CBCe(x []block, k key, s block) (y []block) {
     y0 := Fe(s, k)
     y = append(y, Fe(xb(x[0], y0), k))
@@ -184,6 +184,32 @@ func CBCd(x []block, k key, s block) (y []block) {
     y = append(y, xb(Fd(x[0], k), x0))
     for i := 1; i < len(x); i++ {
         y = append(y, xb(Fd(x[i], k), x[i-1]))
+    }
+    return
+}
+
+// CFB mode
+func CFBe(x []byte, k key, s block) (y []byte) {
+    for i := 0; i < len(x); i += 16 {
+        s = Fe(s, k)
+        for j := 0; j < 16 && i+j < len(x); j++ {
+            s[j/4] ^= (uint32(x[i+j]) << ((3-(j%4))*8))
+            y = append(y, byte(s[j/4] >> ((3-(j%4))*8)))
+        }
+    }
+    return
+}
+
+func CFBd(x []byte, k key, s block) (y []byte) {
+    var s1 block
+    for i := 0; i < len(x); i += 16 {
+        s = Fe(s, k)
+        s1 = s
+        for j := 0; j < 16 && i+j < len(x); j++ {
+            s[j/4] ^= (uint32(x[i+j]) << ((3-(j%4))*8))
+            y = append(y, byte(s[j/4] >> ((3-(j%4))*8)))
+        }
+        s = xb(s, s1)
     }
     return
 }
