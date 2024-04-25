@@ -215,10 +215,19 @@ func CFBd(x []byte, k key, s block) (y []byte) {
 }
 
 // CTR (Counter) mode
+func (s *block) Increment() {
+    for i := 0; i < 4; i++ {
+        s[i] = Plus(s[i], uint32(1 << 24))
+        if s[i] != 0 {
+            break
+        }
+    }
+}
+
 func CTR(x []byte, k key, s block) (y []byte) {
     s = Fe(s, k)
     for i := 0; i < len(x); i += 16 {
-        s[0] = Plus(s[0], uint32(1 << 24))
+        s.Increment()
         es := Fe(s, k)
         for j := 0; j < 16 && i+j < len(x); j++ {
             y = append(y, x[i+j] ^ byte(es[j/4] >> ((3-(j%4))*8)))

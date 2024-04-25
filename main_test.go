@@ -406,3 +406,29 @@ func TestCTR(t *testing.T) {
         }
     }
 }
+
+func TestIncrement(t *testing.T) {
+    var tests = []struct{
+        iv block
+        result block
+    }{
+        {
+            block{0xFEFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF},
+            block{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF},
+        },
+        {
+            block{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF},
+            block{0, 0, 0, 0},
+        },
+        {
+            block{0xFFFFFFFF, 0, 0, 0},
+            block{0, 0x01000000, 0, 0},
+        },
+    }
+    for _, test := range tests {
+        test.iv.Increment()
+        if got := test.iv; got != test.result {
+            t.Errorf("%x.Increment() is %x, not %x", test.iv, test.result, got)
+        }
+    }
+}
