@@ -235,3 +235,51 @@ func CTR(x []byte, k key, s block) (y []byte) {
     }
     return
 }
+
+// MAC generation
+// The Phi_1 and Phi_2 transforms
+func Phi1(u block) block {
+    return block{u[1], u[2], u[3], u[0]^u[1]}
+}
+
+func Phi2(u block) block {
+    return block{u[0]^u[3], u[0], u[1], u[2]}
+}
+
+// The Psi map
+func Psi(u []byte) []byte {
+    if len(u) < 16 {
+        u = append(u, 0x80)
+        for len(u) != 16 {
+            u = append(u, 0)
+        }
+    }
+    return u
+}
+
+func MAC(x []byte, k key) (y uint64) {
+    var s block
+    r := Fe(s, k)
+    for i := 0; i < len(x)-16; i += 16 {
+        for j := 0; j < 16; j++ {
+            s[j/4] ^= (uint32(x[i+j]) << ((3-(j%4))*8))
+        }
+        s = Fe(s, k)
+    }
+    if last := len(x) % 16; last == 0 {
+        for j := 0; j < 16; j++ {
+            s[j/4] ^= (uint32(x[(len(x)-16)+j]) << ((3-(j%4))*8))
+        }
+        s = xb(s, Phi1(r))
+    } else {
+        xn := Psi(x[len(x)-last:])
+        for j := 0; j < 16; j++ {
+            s[j/4] ^= (uint32(xn[j]) << ((3-(j%4))*8))
+        }
+        s = xb(s, Phi2(r))
+    }
+    s = Fe(s, k)
+    y ^= uint64(s[1])
+    y ^= uint64(s[0]) << 32
+    return
+}
