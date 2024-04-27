@@ -279,7 +279,74 @@ func MAC(x []byte, k key) (y uint64) {
         s = xb(s, Phi2(r))
     }
     s = Fe(s, k)
-    y ^= uint64(s[1])
-    y ^= uint64(s[0]) << 32
+    y |= uint64(s[1])
+    y |= uint64(s[0]) << 32
     return
 }
+
+// Hashing
+type hash [8]uint32
+
+func Sigma1(u [4]block) block {
+    var u0u1 key
+    for i, x := range u[0] {
+        u0u1[i] = x
+    }
+    for i, x := range u[1] {
+        u0u1[4+i] = x
+    }
+    return xb(xb(Fe(xb(u[2], u[3]), u0u1), u[2]), u[3])
+}
+
+func Sigma2(u [4]block) (y hash) {
+    var theta1, theta2 key
+    for i, x := range Sigma1(u) {
+        theta1[i] = x
+        theta2[i] = x
+        theta2[i] ^= 0xFFFFFFFF
+    }
+    for i, x := range u[3] {
+        theta1[4+i] = x
+    }
+    for i, x := range u[2] {
+        theta2[4+i] = x
+    }
+    for i, x := range Fe(u[0], theta1) {
+        y[i] = x
+        y[i] ^= u[0][i]
+    }
+    for i, x := range Fe(u[1], theta2) {
+        y[4+i] = x
+        y[4+i] ^= u[1][i]
+    }
+    return
+}
+
+func Hash(x []byte) (y hash) {
+    var lenX = uint64(len(x))*8
+    for len(x) % 32 != 0 {
+        x = append(x, 0)
+    }
+    var s block
+    var h = hash{0xB194BAC8, 0x0A08F53B, 0x366D008E, 0x584A5DE4, 0x8504FA9D, 0x1BB6C7AC, 0x252E72C2, 0x02FDCE0D}
+    for i := 0; i < len(x); i += 32 {
+        var xih [4]block
+        xih[0], xih[1] = block{0, 0, 0, 0}, block{0, 0, 0, 0}
+        for j := 0; j < 8; j++ {
+            xih[2+(j/4)][j%4] = h[j]
+        }
+        for j := 0; j < 32; j++ {
+            xih[j/16][(j/4)%4] |= uint32(x[i+j]) << ((3-(j%4))*8)
+        }
+        
+        s = xb(s, Sigma1(xih))
+        h = Sigma2(xih)
+    }
+    var lelX block
+    for i := 0; i < 8; i++ {
+        lelX[i/4] |= uint32((lenX >> (i*8)) & 0xFF) << ((3-(i%4))*8)
+    }
+    h1 := block{h[0], h[1], h[2], h[3]}
+    h2 := block{h[4], h[5], h[6], h[7]}
+    return Sigma2([4]block{lelX, s, h1, h2})
+} 
